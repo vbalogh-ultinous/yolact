@@ -157,3 +157,11 @@ vid/
 vidres/
 
 _.py
+
+# vbalogh-ultinous
+data/*
+results/*
+output/*
+*.png
+*jpg
+*json
