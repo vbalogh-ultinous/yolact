@@ -584,17 +584,13 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         plt.show()
     else:
         json_data['path'] = path
-        #print(json_save_path, json_data)
         with open(json_save_path, 'w') as f:
                 json.dump(json_data, f)
-        cv2.imwrite(image_save_path, img_numpy)
+        # cv2.imwrite(image_save_path, img_numpy)
 
 def evalimages(net:Yolact, input_folder:str, output_folder:str):
-    #image_folder = os.path.join(output_folder, 'img')
-    #json_folder = os.path.join(output_folder, 'json')
+
     if not os.path.exists(output_folder):
-        #os.mkdir(image_folder)
-        #os.mkdir(json_folder)
         os.mkdir(output_folder)
 
     print()
