@@ -108,6 +108,9 @@ def drawRectangles(indices, C, head_bbs, person_bbs, image):
             cv2.rectangle(image, (person_bbs[col_ind][0], person_bbs[col_ind][1]),
                           (person_bbs[col_ind][2], person_bbs[col_ind][3]),
                           color, 1)
+        else:
+            indices[0].remove(row_ind)
+            indices[1].remove(col_ind)
     for i in getMismatchedIndices(head_bbs, indices[0]):
         cv2.rectangle(image, (head_bbs[i][0], head_bbs[i][1]), (head_bbs[i][2], head_bbs[i][3]),
                       (0, 0, 255), 2)
