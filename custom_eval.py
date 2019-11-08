@@ -589,14 +589,13 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         # cv2.imwrite(image_save_path, img_numpy)
 
 def evalimages(net:Yolact, input_folder:str, output_folder:str):
-
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
 
     print()
     for p in Path(input_folder).glob('*'): 
         path = str(p)
-        if path.find('.png') != -1 or path.find('.jpg') != -1:
+        if path.find('.png') != -1 or path.find('.jpg') != -1 or path.find('.jpeg') != -1:
             name = os.path.basename(path)
             name = '.'.join(name.split('.')[:-1])
             out_path_prefix = os.path.join(output_folder, name)
