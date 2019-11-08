@@ -155,7 +155,12 @@ def Align(head_file, person_dir, image_dir, out_dir):
             person_bbs = getPersonBoundingBoxes(person_dir, filename)
             head_bbs = getHeadBoundingBoxes(head_file, person_dir, filename)
             indices, C = computeAlginments(head_bbs, person_bbs)
-            img_filename = '.'.join((filename.strip().split('.'))[0:-1]) + '.png'
+            img_format = '.png'
+            if image_dir.find('HollywoodHeads')!=-1:
+                img_format = '.jpeg'
+            elif image_dir.find('MPII')!=-1:
+                img_format = '.jpg'
+            img_filename = '.'.join((filename.strip().split('.'))[0:-1]) + img_format
             image = cv2.imread(os.path.join(image_dir, img_filename))
             drawRectangles(indices, C,  head_bbs, person_bbs, image)
             print('image saved to ', os.path.join(out_dir, img_filename))
