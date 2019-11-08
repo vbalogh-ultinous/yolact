@@ -159,6 +159,7 @@ vidres/
 _.py
 
 # vbalogh-ultinous
+weights
 data/*
 results/*
 output/*
