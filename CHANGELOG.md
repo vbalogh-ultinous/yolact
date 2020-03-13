@@ -4,6 +4,36 @@ This document will detail all changes I make.
 I don't know how I'm going to be versioning things yet, so you get dates for now.
 
 ```
+2020.01.25:
+  - Fixed the mask IoU branch crashing when all masks in a batch are discarded (fixes #302, #259).
+2020.01.24:
+  - Fixed the conv layer detection during initialization to work with pytorch 1.4 (fixes #292). 
+2020.01.23:
+  - Fixed the video playback crashing if there's nothing in the scene (fixes #266).
+  - Fixed the logger logging the last loss as total loss instead of the actual total (fixes #254).
+
+2019.12.16 (v1.2):
+  - Added YOLACT++ implementation, paper, and code.
+    - Added DCN support (need to compile CUDA kernels if you want to use them, see README).
+    - Added a mask rescoring network trained with mask iou.
+    - Added configs with more anchors.
+
+2019.12.06:
+  - Made training much more stable (no more infs and hopefully fewer loss explosions) by ignoring
+    augmented boxes with < 4px of height and width (this includes 0 area boxes which caused the inf).
+    See #222 for details.
+
+2019.11.20:
+  - Fixed bug where saving videos wouldn't work when using cv2 not compiled with display support (#197).
+
+2019.11.06:
+  - Changed Cython import to only active when using traditional nms.
+  - Added cross-class fast NMS.
+
+2019.11.04:
+  - Fixed a bug where the learning rate auto-scaling wasn't being applied properly.
+  - Fixed a logging bug were lr was sometimes not properly logged after a resume.
+
 2019.10.25 (v1.1):
   - Added proper Multi-GPU support. Simply increase your batch size to 8*num_gpus and everything will scale.
     - I get an ~1.8x training speed increase when using 2 gpus and an ~3x increase when using 4.

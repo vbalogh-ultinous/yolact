@@ -82,14 +82,20 @@ parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
 
-# This is managed by set_lr
-cur_lr = 0
-
 if args.config is not None:
     set_cfg(args.config)
 
 if args.dataset is not None:
     set_dataset(args.dataset)
+
+if args.autoscale and args.batch_size != 8:
+    factor = args.batch_size / 8
+    if __name__ == '__main__':
+        print('Scaling parameters by %.2f to account for a batch size of %d.' % (factor, args.batch_size))
+
+    cfg.lr *= factor
+    cfg.max_iter //= factor
+    cfg.lr_steps = [x // factor for x in cfg.lr_steps]
 
 # Update training parameters from the config if necessary
 def replace(name):
@@ -99,23 +105,19 @@ replace('decay')
 replace('gamma')
 replace('momentum')
 
-if args.autoscale and args.batch_size != 8:
-    factor = args.batch_size / 8
-    print('Scaling parameters by %.2f to account for a batch size of %d.' % (factor, args.batch_size))
-
-    cfg.lr *= factor
-    cfg.max_iter //= factor
-    cfg.lr_steps = [x // factor for x in cfg.lr_steps]
+# This is managed by set_lr
+cur_lr = args.lr
 
 if torch.cuda.device_count() == 0:
     print('No GPUs detected. Exiting...')
     exit(-1)
 
 if args.batch_size // torch.cuda.device_count() < 6:
-    print('Per-GPU batch size is less than the recommended limit for batch norm. Disabling batch norm.')
+    if __name__ == '__main__':
+        print('Per-GPU batch size is less than the recommended limit for batch norm. Disabling batch norm.')
     cfg.freeze_bn = True
 
-loss_types = ['B', 'C', 'M', 'P', 'D', 'E', 'S']
+loss_types = ['B', 'C', 'M', 'P', 'D', 'E', 'S', 'I']
 
 if torch.cuda.is_available():
     if args.cuda:
@@ -141,7 +143,8 @@ class NetLoss(nn.Module):
     
     def forward(self, images, targets, masks, num_crowds):
         preds = self.net(images)
-        return self.criterion(preds, targets, masks, num_crowds)
+        losses = self.criterion(self.net, preds, targets, masks, num_crowds)
+        return losses
 
 class CustomDataParallel(nn.DataParallel):
     """
@@ -338,7 +341,7 @@ def train():
                 if args.log:
                     precision = 5
                     loss_info = {k: round(losses[k].item(), precision) for k in losses}
-                    loss_info['T'] = round(losses[k].item(), precision)
+                    loss_info['T'] = round(loss.item(), precision)
 
                     if args.log_gpu:
                         log.log_gpu_stats = (iteration % 10 == 0) # nvidia-smi is sloooow

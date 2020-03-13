@@ -49,6 +49,8 @@ def parse_args(argv=None):
                         help='Use cuda to evaulate model')
     parser.add_argument('--fast_nms', default=True, type=str2bool,
                         help='Whether to use a faster, but not entirely correct version of NMS.')
+    parser.add_argument('--cross_class_nms', default=False, type=str2bool,
+                        help='Whether compute NMS cross-class or per-class.')
     parser.add_argument('--display_masks', default=True, type=str2bool,
                         help='Whether or not to display masks over bounding boxes')
     parser.add_argument('--display_bboxes', default=True, type=str2bool,
@@ -142,16 +144,20 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
         h, w, _ = img.shape
     
     with timer.env('Postprocess'):
+        save = cfg.rescore_bbox
+        cfg.rescore_bbox = True
         t = postprocess(dets_out, w, h, visualize_lincomb = args.display_lincomb,
                                         crop_masks        = args.crop,
                                         score_threshold   = args.score_threshold)
-        torch.cuda.synchronize()
+        cfg.rescore_bbox = save
 
     with timer.env('Copy'):
+        idx = t[1].argsort(0, descending=True)[:args.top_k]
+        
         if cfg.eval_mask_branch:
             # Masks are drawn on the GPU, so don't copy
-            masks = t[3][:args.top_k]
-        classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]]
+            masks = t[3][idx]
+        classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
 
     num_dets_to_consider = min(args.top_k, classes.shape[0])
     for j in range(num_dets_to_consider):
@@ -260,7 +266,15 @@ def prep_benchmark(dets_out, h, w):
         t = postprocess(dets_out, w, h, crop_masks=args.crop, score_threshold=args.score_threshold)
 
     with timer.env('Copy'):
-        classes, scores, boxes, masks = [x[:args.top_k].cpu().numpy() for x in t]
+        classes, scores, boxes, masks = [x[:args.top_k] for x in t]
+        if isinstance(scores, list):
+            box_scores = scores[0].cpu().numpy()
+            mask_scores = scores[1].cpu().numpy()
+        else:
+            scores = scores.cpu().numpy()
+        classes = classes.cpu().numpy()
+        boxes = boxes.cpu().numpy()
+        masks = masks.cpu().numpy()
     
     with timer.env('Sync'):
         # Just in case
@@ -392,7 +406,13 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
             return
 
         classes = list(classes.cpu().numpy().astype(int))
-        scores = list(scores.cpu().numpy().astype(float))
+        if isinstance(scores, list):
+            box_scores = list(scores[0].cpu().numpy().astype(float))
+            mask_scores = list(scores[1].cpu().numpy().astype(float))
+        else:
+            scores = list(scores.cpu().numpy().astype(float))
+            box_scores = scores
+            mask_scores = scores
         masks = masks.view(-1, h*w).cuda()
         boxes = boxes.cuda()
 
@@ -404,8 +424,8 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
             for i in range(masks.shape[0]):
                 # Make sure that the bounding box actually makes sense and a mask was produced
                 if (boxes[i, 3] - boxes[i, 1]) * (boxes[i, 2] - boxes[i, 0]) > 0:
-                    detections.add_bbox(image_id, classes[i], boxes[i,:],   scores[i])
-                    detections.add_mask(image_id, classes[i], masks[i,:,:], scores[i])
+                    detections.add_bbox(image_id, classes[i], boxes[i,:],   box_scores[i])
+                    detections.add_mask(image_id, classes[i], masks[i,:,:], mask_scores[i])
             return
     
     with timer.env('Eval Setup'):
@@ -422,9 +442,16 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
             crowd_mask_iou_cache = None
             crowd_bbox_iou_cache = None
 
+        box_indices = sorted(range(num_pred), key=lambda i: -box_scores[i])
+        mask_indices = sorted(box_indices, key=lambda i: -mask_scores[i])
+
         iou_types = [
-            ('box',  lambda i,j: bbox_iou_cache[i, j].item(), lambda i,j: crowd_bbox_iou_cache[i,j].item()),
-            ('mask', lambda i,j: mask_iou_cache[i, j].item(), lambda i,j: crowd_mask_iou_cache[i,j].item())
+            ('box',  lambda i,j: bbox_iou_cache[i, j].item(),
+                     lambda i,j: crowd_bbox_iou_cache[i,j].item(),
+                     lambda i: box_scores[i], box_indices),
+            ('mask', lambda i,j: mask_iou_cache[i, j].item(),
+                     lambda i,j: crowd_mask_iou_cache[i,j].item(),
+                     lambda i: mask_scores[i], mask_indices)
         ]
 
     timer.start('Main loop')
@@ -435,13 +462,13 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
         for iouIdx in range(len(iou_thresholds)):
             iou_threshold = iou_thresholds[iouIdx]
 
-            for iou_type, iou_func, crowd_func in iou_types:
+            for iou_type, iou_func, crowd_func, score_func, indices in iou_types:
                 gt_used = [False] * len(gt_classes)
                 
                 ap_obj = ap_data[iou_type][iouIdx][_class]
                 ap_obj.add_gt_positives(num_gt_for_class)
 
-                for i in range(num_pred):
+                for i in indices:
                     if classes[i] != _class:
                         continue
                     
@@ -459,7 +486,7 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
                     
                     if max_match_idx >= 0:
                         gt_used[max_match_idx] = True
-                        ap_obj.push(scores[i], True)
+                        ap_obj.push(score_func(i), True)
                     else:
                         # If the detection matches a crowd, we can just ignore it
                         matched_crowd = False
@@ -479,7 +506,7 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
                         # same result as COCOEval. There aren't even that many crowd annotations to
                         # begin with, but accuracy is of the utmost importance.
                         if not matched_crowd:
-                            ap_obj.push(scores[i], False)
+                            ap_obj.push(score_func(i), False)
     timer.stop('Main loop')
 
 
@@ -625,10 +652,11 @@ def evalvideo(net:Yolact, path:str, out_path:str=None):
     target_fps   = round(vid.get(cv2.CAP_PROP_FPS))
     frame_width  = round(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = round(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    num_frames   = round(vid.get(cv2.CAP_PROP_FRAME_COUNT))
     
     if is_webcam:
         num_frames = float('inf')
+    else:
+        num_frames = round(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 
     net = CustomDataParallel(net).cuda()
     transform = torch.nn.DataParallel(FastBaseTransform()).cuda()
@@ -688,70 +716,79 @@ def evalvideo(net:Yolact, path:str, out_path:str=None):
 
     # All this timing code to make sure that 
     def play_video():
-        nonlocal frame_buffer, running, video_fps, is_webcam, num_frames, frames_displayed, vid_done
+        try:
+            nonlocal frame_buffer, running, video_fps, is_webcam, num_frames, frames_displayed, vid_done
 
-        video_frame_times = MovingAverage(100)
-        frame_time_stabilizer = frame_time_target
-        last_time = None
-        stabilizer_step = 0.0005
-        progress_bar = ProgressBar(30, num_frames)
+            video_frame_times = MovingAverage(100)
+            frame_time_stabilizer = frame_time_target
+            last_time = None
+            stabilizer_step = 0.0005
+            progress_bar = ProgressBar(30, num_frames)
 
-        while running:
-            frame_time_start = time.time()
+            while running:
+                frame_time_start = time.time()
 
-            if not frame_buffer.empty():
-                next_time = time.time()
-                if last_time is not None:
-                    video_frame_times.add(next_time - last_time)
-                    video_fps = 1 / video_frame_times.get_avg()
-                if out_path is None:
-                    cv2.imshow(path, frame_buffer.get())
-                else:
-                    out.write(frame_buffer.get())
-                frames_displayed += 1
-                last_time = next_time
-
-                if out_path is not None:
-                    if video_frame_times.get_avg() == 0:
-                        fps = 0
+                if not frame_buffer.empty():
+                    next_time = time.time()
+                    if last_time is not None:
+                        video_frame_times.add(next_time - last_time)
+                        video_fps = 1 / video_frame_times.get_avg()
+                    if out_path is None:
+                        cv2.imshow(path, frame_buffer.get())
                     else:
-                        fps = 1 / video_frame_times.get_avg()
-                    progress = frames_displayed / num_frames * 100
-                    progress_bar.set_val(frames_displayed)
+                        out.write(frame_buffer.get())
+                    frames_displayed += 1
+                    last_time = next_time
 
-                    print('\rProcessing Frames  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
-                        % (repr(progress_bar), frames_displayed, num_frames, progress, fps), end='')
+                    if out_path is not None:
+                        if video_frame_times.get_avg() == 0:
+                            fps = 0
+                        else:
+                            fps = 1 / video_frame_times.get_avg()
+                        progress = frames_displayed / num_frames * 100
+                        progress_bar.set_val(frames_displayed)
 
-            # Press Escape to close
-            if cv2.waitKey(1) == 27 or not (frames_displayed < num_frames):
-                running = False
+                        print('\rProcessing Frames  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
+                            % (repr(progress_bar), frames_displayed, num_frames, progress, fps), end='')
 
-            if not vid_done:
-                buffer_size = frame_buffer.qsize()
-                if buffer_size < args.video_multiframe:
-                    frame_time_stabilizer += stabilizer_step
-                elif buffer_size > args.video_multiframe:
-                    frame_time_stabilizer -= stabilizer_step
-                    if frame_time_stabilizer < 0:
-                        frame_time_stabilizer = 0
+                
+                # This is split because you don't want savevideo to require cv2 display functionality (see #197)
+                if out_path is None and cv2.waitKey(1) == 27:
+                    # Press Escape to close
+                    running = False
+                if not (frames_displayed < num_frames):
+                    running = False
 
-                new_target = frame_time_stabilizer if is_webcam else max(frame_time_stabilizer, frame_time_target)
-            else:
-                new_target = frame_time_target
+                if not vid_done:
+                    buffer_size = frame_buffer.qsize()
+                    if buffer_size < args.video_multiframe:
+                        frame_time_stabilizer += stabilizer_step
+                    elif buffer_size > args.video_multiframe:
+                        frame_time_stabilizer -= stabilizer_step
+                        if frame_time_stabilizer < 0:
+                            frame_time_stabilizer = 0
 
-            next_frame_target = max(2 * new_target - video_frame_times.get_avg(), 0)
-            target_time = frame_time_start + next_frame_target - 0.001 # Let's just subtract a millisecond to be safe
-            
-            if out_path is None or args.emulate_playback:
-                # This gives more accurate timing than if sleeping the whole amount at once
-                while time.time() < target_time:
+                    new_target = frame_time_stabilizer if is_webcam else max(frame_time_stabilizer, frame_time_target)
+                else:
+                    new_target = frame_time_target
+
+                next_frame_target = max(2 * new_target - video_frame_times.get_avg(), 0)
+                target_time = frame_time_start + next_frame_target - 0.001 # Let's just subtract a millisecond to be safe
+                
+                if out_path is None or args.emulate_playback:
+                    # This gives more accurate timing than if sleeping the whole amount at once
+                    while time.time() < target_time:
+                        time.sleep(0.001)
+                else:
+                    # Let's not starve the main thread, now
                     time.sleep(0.001)
-            else:
-                # Let's not starve the main thread, now
-                time.sleep(0.001)
+        except:
+            # See issue #197 for why this is necessary
+            import traceback
+            traceback.print_exc()
 
 
-    extract_frame = lambda x, i: (x[0][i] if x[1][i] is None else x[0][i].to(x[1][i]['box'].device), [x[1][i]])
+    extract_frame = lambda x, i: (x[0][i] if x[1][i]['detection'] is None else x[0][i].to(x[1][i]['detection']['box'].device), [x[1][i]])
 
     # Prime the network on the first frame because I do some thread unsafe things otherwise
     print('Initializing model... ', end='')
@@ -832,8 +869,10 @@ def evalvideo(net:Yolact, path:str, out_path:str=None):
 
 def evaluate(net:Yolact, dataset, train_mode=False):
     net.detect.use_fast_nms = args.fast_nms
+    net.detect.use_cross_class_nms = args.cross_class_nms
     cfg.mask_proto_debug = args.mask_proto_debug
 
+    # TODO Currently we do not support Fast Mask Re-scroing in evalimage, evalimages, and evalvideo
     if args.image is not None:
         if ':' in args.image:
             inp, out = args.image.split(':')
@@ -908,7 +947,6 @@ def evaluate(net:Yolact, dataset, train_mode=False):
 
             with timer.env('Network Extra'):
                 preds = net(batch)
-
             # Perform the meat of the operation here depending on our mode.
             if args.display:
                 img_numpy = prep_display(preds, img, h, w)

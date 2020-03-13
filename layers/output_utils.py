@@ -33,7 +33,9 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
     """
     
     dets = det_output[batch_idx]
-    
+    net = dets['net']
+    dets = dets['detection']
+
     if dets is None:
         return [torch.Tensor()] * 4 # Warning, this is 4 copies of the same thing
 
@@ -64,7 +66,7 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
         if visualize_lincomb:
             display_lincomb(proto_data, masks)
 
-        masks = torch.matmul(proto_data, masks.t())
+        masks = proto_data @ masks.t()
         masks = cfg.mask_proto_mask_activation(masks)
 
         # Crop masks before upsampling because you know why
@@ -73,6 +75,17 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
 
         # Permute into the correct output shape [num_dets, proto_h, proto_w]
         masks = masks.permute(2, 0, 1).contiguous()
+
+        if cfg.use_maskiou:
+            with timer.env('maskiou_net'):                
+                with torch.no_grad():
+                    maskiou_p = net.maskiou_net(masks.unsqueeze(1))
+                    maskiou_p = torch.gather(maskiou_p, dim=1, index=classes.unsqueeze(1)).squeeze(1)
+                    if cfg.rescore_mask:
+                        if cfg.rescore_bbox:
+                            scores = scores * maskiou_p
+                        else:
+                            scores = [scores, scores * maskiou_p]
 
         # Scale masks up to the full image
         masks = F.interpolate(masks.unsqueeze(0), (h, w), mode=interpolation_mode, align_corners=False).squeeze(0)

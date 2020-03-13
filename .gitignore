@@ -121,8 +121,9 @@ test_data_aug.py
 .idea/
 
 # temp checkout soln
-data/datasets/
-data/ssd_dataloader.py
+data/coco
+data/sbd
+data/cityscapes
 
 # pylint
 .pylintrc
