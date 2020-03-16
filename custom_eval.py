@@ -138,16 +138,26 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
         h, w, _ = img.shape
     
     with timer.env('Postprocess'):
+        save = cfg.rescore_bbox
+        cfg.rescore_bbox = True
         t = postprocess(dets_out, w, h, visualize_lincomb = args.display_lincomb,
                                         crop_masks        = args.crop,
                                         score_threshold   = args.score_threshold)
-        torch.cuda.synchronize()
+        #torch.cuda.synchronize()
+        cfg.rescore_bbox = save
 
     with timer.env('Copy'):
+        idx = t[1].argsort(0, descending=True)[:args.top_k]
+        
         if cfg.eval_mask_branch:
             # Masks are drawn on the GPU, so don't copy
-            masks = t[3][:args.top_k]
-        classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]]
+            masks = t[3][idx]
+        classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
+        #if cfg.eval_mask_branch:
+            # Masks are drawn on the GPU, so don't copy
+        #    masks = t[3][:args.top_k]
+        #print(type(t))
+        #classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]] # classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]]
 
     num_dets_to_consider = min(args.top_k, classes.shape[0])
     for j in range(num_dets_to_consider):
