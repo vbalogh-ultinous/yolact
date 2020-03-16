@@ -107,6 +107,8 @@ def parse_args(argv=None):
                         help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
     parser.add_argument('--detect', default=False, dest='detect', action='store_true',
                         help='Don\'t evauluate the mask branch at all and only do object detection. This only works for --display and --benchmark.')
+    parser.add_argument('--csv', default=None, type=str,
+                        help='If specified, outputs a csv file storing bounding box and confidence score data.')
 
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False)
@@ -143,7 +145,6 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
         t = postprocess(dets_out, w, h, visualize_lincomb = args.display_lincomb,
                                         crop_masks        = args.crop,
                                         score_threshold   = args.score_threshold)
-        #torch.cuda.synchronize()
         cfg.rescore_bbox = save
 
     with timer.env('Copy'):
@@ -153,11 +154,6 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
             # Masks are drawn on the GPU, so don't copy
             masks = t[3][idx]
         classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
-        #if cfg.eval_mask_branch:
-            # Masks are drawn on the GPU, so don't copy
-        #    masks = t[3][:args.top_k]
-        #print(type(t))
-        #classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]] # classes, scores, boxes = [x[:args.top_k].cpu().numpy() for x in t[:3]]
 
     num_dets_to_consider = min(args.top_k, classes.shape[0])
     for j in range(num_dets_to_consider):
@@ -595,7 +591,11 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     else:
         json_data['path'] = path
         with open(json_save_path, 'w') as f:
-                json.dump(json_data, f)
+            json.dump(json_data, f)
+        if args.csv is not None:
+            with open(args.csv, 'a') as csv_f:
+                csv_f.write(json_data['path'])
+
         # cv2.imwrite(image_save_path, img_numpy)
 
 def evalimages(net:Yolact, input_folder:str, output_folder:str):
@@ -1031,6 +1031,10 @@ if __name__ == '__main__':
             prep_coco_cats()
         else:
             dataset = None        
+
+        if args.csv is not None and os.path.exists(args.csv):
+            print('Delete existing csv', args.csv)
+            os.remove(args.csv)
 
         print('Loading model...', end='')
         net = Yolact()
