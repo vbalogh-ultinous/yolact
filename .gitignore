@@ -160,6 +160,7 @@ vidres/
 _.py
 
 # vbalogh-ultinous
+yolact-env
 weights
 data/*
 results/*
