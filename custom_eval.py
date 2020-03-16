@@ -593,8 +593,10 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         with open(json_save_path, 'w') as f:
             json.dump(json_data, f)
         if args.csv is not None:
+            text = [json_data['path'], json_data['bbox'][0], json_data['bbox'][1], json_data['bbox'][2], json_data['bbox'][3], json_data['score']]
+            text = '\t'.join([str(i) for i in text]) + '\n'
             with open(args.csv, 'a') as csv_f:
-                csv_f.write(json_data['path'])
+                csv_f.write(text)
 
         # cv2.imwrite(image_save_path, img_numpy)
 
