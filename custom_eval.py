@@ -610,9 +610,9 @@ def evalimages(net:Yolact, input_folder:str, output_folder:str):
         os.mkdir(output_folder)
 
     print()
-    for p in Path(input_folder).glob('*'): 
+    for p in Path(input_folder).glob('**/*'): 
         path = str(p)
-        if path.find('.png') != -1 or path.find('.jpg') != -1 or path.find('.jpeg') != -1:
+        if path.lower().endswith(('.jpg', 'jpeg', 'png')) :
             name = os.path.basename(path)
             name = '.'.join(name.split('.')[:-1])
             out_path_prefix = os.path.join(output_folder, name)
