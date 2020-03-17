@@ -618,7 +618,7 @@ def evalimages(net:Yolact, input_folder:str, output_folder:str):
             out_path_prefix = os.path.join(output_folder, name)
             evalimage(net, path, out_path_prefix)
             print(path + ' -> ' + out_path_prefix)
-    print('Done.')
+    print('Detection done.')
 
 from multiprocessing.pool import ThreadPool
 from queue import Queue
@@ -723,7 +723,7 @@ def evalvideo(net:Yolact, path:str):
     # Prime the network on the first frame because I do some thread unsafe things otherwise
     print('Initializing model... ', end='')
     eval_network(transform_frame(get_next_frame(vid)))
-    print('Done.')
+    print('Loading model done.')
 
     # For each frame the sequence of functions it needs to go through to be processed (in reversed order)
     sequence = [prep_frame, eval_network, transform_frame]
