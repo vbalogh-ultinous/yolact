@@ -1,0 +1,78 @@
+Model: weights/yolact_base_54_800000.pth
+Test number: 100
+
+Input size: 640x360
+        Batch size: 1
+        Average spend time 25.70ms, 0.03 sec 
+        fps: 3891.2950783231054
+        Batch size: 2
+        Average spend time 41.55ms, 0.04 sec 
+        fps: 4813.560080644814
+        Batch size: 4
+        Average spend time 73.42ms, 0.07 sec 
+        fps: 5448.048041182908
+        Batch size: 8
+        Average spend time 140.22ms, 0.14 sec 
+        fps: 5705.174574666128
+        Batch size: 16
+        Average spend time 272.09ms, 0.27 sec 
+        fps: 5880.3231034191185
+
+Input size: 1280x720
+        Batch size: 1
+        Average spend time 78.26ms, 0.08 sec 
+        fps: 1277.7733722738583
+        Batch size: 2
+        Average spend time 146.21ms, 0.15 sec 
+        fps: 1367.8721342930007
+        Batch size: 4
+        Average spend time 269.20ms, 0.27 sec 
+        fps: 1485.8707397310068
+        Batch size: 8
+        Average spend time 538.15ms, 0.54 sec 
+        fps: 1486.5871637646649
+        Batch size: 16
+        Average spend time 1063.65ms, 1.06 sec 
+        fps: 1504.2593372471742
+        
+################################################################################
+
+Model: weights/yolact_plus_base_54_800000.pth
+Test number: 100
+
+Input size: 640x360
+        Batch size: 1
+        Average spend time 30.33ms, 0.03 sec
+        fps: 3297.1923619793824
+        Batch size: 2
+        Average spend time 49.29ms, 0.05 sec
+        fps: 4057.2163399751166
+        Batch size: 4
+        Average spend time 88.08ms, 0.09 sec
+        fps: 4541.5200082551355
+        Batch size: 8
+        Average spend time 166.56ms, 0.17 sec
+        fps: 4803.104797819647
+        Batch size: 16
+        Average spend time 320.90ms, 0.32 sec
+        fps: 4986.051857763713
+
+Input size: 1280x720
+        Batch size: 1
+        Average spend time 95.66ms, 0.10 sec
+        fps: 1045.37206529139
+        Batch size: 2
+        Average spend time 178.39ms, 0.18 sec
+        fps: 1121.16551062093
+        Batch size: 4
+        Average spend time 327.50ms, 0.33 sec
+        fps: 1221.3606908393624
+        Batch size: 8
+        Average spend time 650.33ms, 0.65 sec
+        fps: 1230.1527235070807
+        Batch size: 16
+        Average spend time 1249.26ms, 1.25 sec 
+        fps: 1280.7562962079635
+        
+        
+
