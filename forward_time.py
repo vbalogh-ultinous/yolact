@@ -8,10 +8,10 @@ from utils.functions import SavePath
 from utils.augmentations import FastBaseTransform
 import gc
 
-img_sizes = [(1280, 720)]#[(640, 360), (1280, 720)] 
-batch_sizes = [8]#[1,2, 4,8]
+img_sizes = [(640, 360), (1280, 720)] 
+batch_sizes = [1,2,4,8,16]#[1,2, 4,8]
 test_num = 100
-model = 'weights/yolact_plus_base_54_800000.pth' #'weights/yolact_base_54_800000.pth''weights/yolact_plus_base_54_800000.pth'
+model = 'weights/yolact_base_54_800000.pth' #'weights/yolact_base_54_800000.pth''weights/yolact_plus_base_54_800000.pth'
 
 # set model
 model_path = SavePath.from_str(model)
