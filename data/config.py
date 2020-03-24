@@ -56,6 +56,7 @@ COCO_LABEL_MAP = { 1:  1,  2:  2,  3:  3,  4:  4,  5:  5,  6:  6,  7:  7,  8:  8
 
 
 
+
 # ----------------------- CONFIG CLASS ----------------------- #
 
 class Config(object):
@@ -127,6 +128,17 @@ dataset_base = Config({
     # If not specified, this just assumes category ids start at 1 and increase sequentially.
     'label_map': None
 })
+
+coco2017_person_dataset = dataset_base.copy({
+    'name': 'COCO person only 2017',
+
+    'train_info': './data/coco/annotations/instances_train2017_person.json',
+    'valid_info': './data/coco/annotations/instances_val2017_person.json',
+    'has_gt': True,
+    'class_names': {'person'},
+    'label_map': None
+})
+
 
 coco2014_dataset = dataset_base.copy({
     'name': 'COCO 2014',
@@ -789,6 +801,17 @@ yolact_plus_base_config = yolact_base_config.copy({
     'rescore_mask': True,
 
     'discard_mask_area': 5*5,
+})
+
+yolact_plus_person_config = yolact_plus_base_config.copy({
+    'name': 'yolact_plus_person',
+    'dataset': coco2017_person_dataset,
+    'num_classes': len(coco2017_person_dataset.class_names) + 1,
+    # 'lr': 1e-3,
+
+    # Training params
+    'max_iter': 400000,
+    'lr_steps': (280000/2, 600000/2, 700000/2, 750000/2),
 })
 
 yolact_plus_resnet50_config = yolact_plus_base_config.copy({
