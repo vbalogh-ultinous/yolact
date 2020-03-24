@@ -1,0 +1,11 @@
+2 GPU:
+  resnet101:
+    ++: 5.5 nap, sima: 3.5 nap
+  resnet50:
+    ++: 5 nap
+
+1 GPU:
+  resnet101:
+    ++: bő 10 nap, sima: bő 6 nap
+  resnet50:
+    ++: 9 nap
