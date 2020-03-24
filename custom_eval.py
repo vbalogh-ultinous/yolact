@@ -592,13 +592,15 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         json_data['path'] = path
         with open(json_save_path, 'w') as f:
             json.dump(json_data, f)
-        if args.csv is not None and 'detections' in json_data.keys(): # yolact has detections on current image
-            person_detections = '\t'.join(['\t'.join(
-                [str(det['bbox'][0]), str(det['bbox'][1]), str(det['bbox'][2]), str(det['bbox'][3]), str(det['score'])]
-            )
-                for det in json_data['detections'] if det['class'] == 'person'])
-
-            text = [json_data['path'], person_detections]
+        if args.csv is not None:
+            text = [json_data['path']]
+            if 'detections' in json_data.keys():  # yolact has detections on current image
+                person_detections = '\t'.join(['\t'.join(
+                    [str(det['bbox'][0]), str(det['bbox'][1]), str(det['bbox'][2]), str(det['bbox'][3]), str(det['score'])]
+                )
+                    for det in json_data['detections'] if det['class'] == 'person'])
+                text.append(person_detections)
+            # text = [json_data['path'], person_detections]
             text = '\t'.join([str(i) for i in text]) + '\n'
             with open(args.csv, 'a') as csv_f:
                 csv_f.write(text)
