@@ -599,7 +599,8 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
                     [str(det['bbox'][0]), str(det['bbox'][1]), str(det['bbox'][2]), str(det['bbox'][3]), str(det['score'])]
                 )
                     for det in json_data['detections'] if det['class'] == 'person'])
-                text.append(person_detections)
+                if 1 < len(text):
+                    text.append(person_detections)
             # text = [json_data['path'], person_detections]
             text = '\t'.join([str(i) for i in text]) + '\n'
             with open(args.csv, 'a') as csv_f:
