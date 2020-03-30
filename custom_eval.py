@@ -222,7 +222,7 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
             # json output                       
             json_det = {}
             json_det['bbox'] = [int(x1), int(y1), int(x2), int(y2)]
-            json_det['class'] = cfg.dataset.class_names[classes[j]]
+            json_det['class'] =  'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
             json_det['score'] = str(score)
             json_dets.append(json_det)
             
@@ -230,7 +230,7 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
                 cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
 
             if args.display_text:
-                _class = cfg.dataset.class_names[classes[j]]
+                _class = 'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
                 text_str = '%s: %.2f' % (_class, score) if args.display_scores else _class
 
                 font_face = cv2.FONT_HERSHEY_DUPLEX
@@ -599,10 +599,12 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
                     [str(det['bbox'][0]), str(det['bbox'][1]), str(det['bbox'][2]), str(det['bbox'][3]), str(det['score'])]
                 )
                     for det in json_data['detections'] if det['class'] == 'person'])
-                if 1 < len(text):
+                print(person_detections, len(person_detections))
+                if 1 < len(person_detections):
                     text.append(person_detections)
             # text = [json_data['path'], person_detections]
             text = '\t'.join([str(i) for i in text]) + '\n'
+            print(text)
             with open(args.csv, 'a') as csv_f:
                 csv_f.write(text)
 
