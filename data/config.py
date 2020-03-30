@@ -803,15 +803,31 @@ yolact_plus_base_config = yolact_base_config.copy({
     'discard_mask_area': 5*5,
 })
 
+yolact_plus_base_1x_config = yolact_plus_base_config.copy({
+    # 1x = 12 epochs, instead of standard 54
+    'max_iter': 180000, # ~ 800000/4.5
+    'lr_steps': (int(280000/4.5), int(600000/4.5), int(700000/4.5), int(750000/4.5)),
+})
+
+
 yolact_plus_person_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_person',
     'dataset': coco2017_person_dataset,
     'num_classes': len(coco2017_person_dataset.class_names) + 1,
     # 'lr': 1e-3,
-
+    # person dataset is smaller => divide by 1.85
     # Training params
-    'max_iter': 400000,
-    'lr_steps': (280000/2, 600000/2, 700000/2, 750000/2),
+    'max_iter': 440000, # ~ 800k / 1.85
+    'lr_steps': (int(280000/1.85), int(600000/1.85), int(700000/1.85), int(750000/1.85)),
+})
+
+yolact_plus_person_1x_config = yolact_plus_person_config.copy({
+    # 1x = 12 epochs, instead of standard 54 => divide by ~4.5
+    'max_iter': 100000, # ~ (800k / 1.85) / 4.5
+    'lr_steps': (int(280000/1.85/4.5), int(600000/1.85/4.5), int(700000/1.85/4.5), int(750000/1.85/4.5)),
+
+
+
 })
 
 yolact_plus_resnet50_config = yolact_plus_base_config.copy({
