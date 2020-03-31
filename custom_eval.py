@@ -811,9 +811,23 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                 frame = torch.from_numpy(read[1]).cuda().float()#torch.from_numpy(vid.read()[1]).cuda().float()
                 batch = transform(frame.unsqueeze(0))
                 preds = net(batch)
-                processed, _ = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
+                processed, json_data = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
                 out.write(processed)
             i +=1
+            if args.csv:
+                with open(args.csv, 'a') as f:
+                    text = str(i)
+                    if 'detections' in json_data.keys():
+                        person_detections = '\t'.join(['\t'.join(
+                            [str(det['bbox'][0]), str(det['bbox'][1]), str(det['bbox'][2]), str(det['bbox'][3]), str(det['score'])]
+                        )
+                            for det in json_data['detections'] if det['class'] == 'person'])
+                    
+                        if 1 <= len(person_detections):
+                            text = text + '\t' + person_detections
+                    text += '\n'
+                    f.write(text)
+                
             if i > 1:
                 frame_times.add(timer.total_time())
                 fps = 1 / frame_times.get_avg()
@@ -1053,9 +1067,11 @@ if __name__ == '__main__':
         else:
             dataset = None        
 
-        if args.csv is not None and os.path.exists(args.csv):
-            print('Delete existing csv', args.csv)
-            os.remove(args.csv)
+        if args.csv is not None:
+            os.makedirs(os.path.dirname(args.csv), exist_ok=True)
+            if os.path.exists(args.csv):
+                print('Delete existing csv', args.csv)
+                os.remove(args.csv)
 
         print('Loading model...', end='')
         net = Yolact()
