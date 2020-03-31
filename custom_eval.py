@@ -26,6 +26,7 @@ from pathlib import Path
 from collections import OrderedDict
 from PIL import Image
 
+from ffprobe import FFProbe
 import matplotlib.pyplot as plt
 import cv2
 
@@ -109,6 +110,8 @@ def parse_args(argv=None):
                         help='Don\'t evauluate the mask branch at all and only do object detection. This only works for --display and --benchmark.')
     parser.add_argument('--csv', default=None, type=str,
                         help='If specified, outputs a csv file storing bounding box and confidence score data.')
+    parser.add_argument('--coco_class', default=None, type=str,
+                        help='If specified, detections are specifically filtered for this coco class.')
 
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False)
@@ -218,32 +221,32 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
             x1, y1, x2, y2 = boxes[j, :]
             color = get_color(j)
             score = scores[j]
-            
+            _class = 'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
             # json output                       
             json_det = {}
             json_det['bbox'] = [int(x1), int(y1), int(x2), int(y2)]
-            json_det['class'] =  'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
+            json_det['class'] =  _class
             json_det['score'] = str(score)
             json_dets.append(json_det)
-            
-            if args.display_bboxes:
-                cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
+            if (args.coco_class == None or args.coco_class == _class):
+                if args.display_bboxes:
+                    cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
 
-            if args.display_text:
-                _class = 'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
-                text_str = '%s: %.2f' % (_class, score) if args.display_scores else _class
+                if args.display_text:
+                    #_class = 'person' if type(cfg.dataset.class_names) == set else cfg.dataset.class_names[classes[j]]
+                    text_str = '%s: %.2f' % (_class, score) if args.display_scores else _class
 
-                font_face = cv2.FONT_HERSHEY_DUPLEX
-                font_scale = 0.6
-                font_thickness = 1
+                    font_face = cv2.FONT_HERSHEY_DUPLEX
+                    font_scale = 0.6
+                    font_thickness = 1
 
-                text_w, text_h = cv2.getTextSize(text_str, font_face, font_scale, font_thickness)[0]
+                    text_w, text_h = cv2.getTextSize(text_str, font_face, font_scale, font_thickness)[0]
 
-                text_pt = (x1, y1 - 3)
-                text_color = [255, 255, 255]
+                    text_pt = (x1, y1 - 3)
+                    text_color = [255, 255, 255]
 
-                cv2.rectangle(img_numpy, (x1, y1), (x1 + text_w, y1 - text_h - 4), color, -1)
-                cv2.putText(img_numpy, text_str, text_pt, font_face, font_scale, text_color, font_thickness, cv2.LINE_AA)
+                    cv2.rectangle(img_numpy, (x1, y1), (x1 + text_w, y1 - text_h - 4), color, -1)
+                    cv2.putText(img_numpy, text_str, text_pt, font_face, font_scale, text_color, font_thickness, cv2.LINE_AA)
         json_data['detections'] = json_dets
     return img_numpy, json_data
 
@@ -782,37 +785,43 @@ def evalvideo(net:Yolact, path:str):
 def savevideo(net:Yolact, in_path:str, out_path:str):
 
     vid = cv2.VideoCapture(in_path)
+    print(vid.isOpened())
+    print(vid.getBackendName())
 
-    target_fps   = round(vid.get(cv2.CAP_PROP_FPS))
+    target_fps   = round(vid.get(cv2.CAP_PROP_FPS)) if vid.get(cv2.CAP_PROP_FPS) != float('inf') else 25
     frame_width  = round(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = round(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    num_frames   = round(vid.get(cv2.CAP_PROP_FRAME_COUNT))
+    num_frames   = round(vid.get(cv2.CAP_PROP_FRAME_COUNT)) if vid.get(cv2.CAP_PROP_FPS) != float('inf') else 100000
+    
+    print(num_frames, target_fps, frame_width, frame_height)
     
     out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), target_fps, (frame_width, frame_height))
 
     transform = FastBaseTransform()
     frame_times = MovingAverage()
     progress_bar = ProgressBar(30, num_frames)
-
+    i = 0
     try:
-        for i in range(num_frames):
+        while(True):#for i in range(num_frames):
             timer.reset()
             with timer.env('Video'):
-                frame = torch.from_numpy(vid.read()[1]).cuda().float()
+                read = vid.read()
+                if read[0] == False:
+                    break
+                frame = torch.from_numpy(read[1]).cuda().float()#torch.from_numpy(vid.read()[1]).cuda().float()
                 batch = transform(frame.unsqueeze(0))
                 preds = net(batch)
-                processed = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
-
+                processed, _ = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
                 out.write(processed)
-            
+            i +=1
             if i > 1:
                 frame_times.add(timer.total_time())
                 fps = 1 / frame_times.get_avg()
                 progress = (i+1) / num_frames * 100
                 progress_bar.set_val(i+1)
 
-                print('\rProcessing Frames  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
-                    % (repr(progress_bar), i+1, num_frames, progress, fps), end='')
+                #print('\rProcessing Frames  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
+                 #   % (repr(progress_bar), i+1, num_frames, progress, fps), end='')
     except KeyboardInterrupt:
         print('Stopping early.')
     
@@ -902,7 +911,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
 
             # Perform the meat of the operation here depending on our mode.
             if args.display:
-                img_numpy = prep_display(preds, img, h, w)
+                img_numpy, _ = prep_display(preds, img, h, w)
             elif args.benchmark:
                 prep_benchmark(preds, h, w)
             else:
