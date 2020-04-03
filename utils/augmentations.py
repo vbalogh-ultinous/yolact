@@ -582,8 +582,8 @@ class GrayscaleTransform(object):
         # 5.  scale back to [0, 255] if original backbone requires
         if not self.backboneTransform.to_float:
             image *= 255.0
-            image = image.astype('uint8')
-        if not cfg.no_init_weights: # if there are not pretrained weights, use only one channel
+            image = image.astype('uint8') # if there are no pretrained weights, use only one channel
+        if not cfg.no_init_weights: # if there are pretrained weights, use 3 channels
             image = np.stack((image, image, image), -1) # three channels to match imagenet pretrained weights 3 channels
         return image.astype(np.float32), masks, boxes, labels
 
