@@ -573,7 +573,8 @@ class GrayscaleTransform(object):
         if not self.backboneTransform.to_float: # if image haven't been already in [0, 1]
             image /= 255.0
         # 3. convert rgb to grayscale
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # backbones' transformation outputs RGB images
+        if 'RGB' == self.backboneTransform.channel_order:
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # backbones' transformation outputs RGB images
         # 4. augmentation of scaling and shifting color values
         S = random.uniform(0.1, 1.0)
         O = random.uniform(0.1, 1.0 - S)
@@ -631,6 +632,21 @@ class BaseTransform(object):
 
     def __call__(self, img, masks=None, boxes=None, labels=None):
         return self.augment(img, masks, boxes, labels)
+
+class GrayscaleBaseTransform(object):
+    """ Transorm to be used when evaluating. """
+
+    def __init__(self, mean=MEANS, std=STD):
+        self.augment = Compose([
+            ConvertFromInts(),
+            Resize(resize_gt=False),
+            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR'),
+            GrayscaleTransform(cfg.backbone)
+        ])
+
+    def __call__(self, img, masks=None, boxes=None, labels=None):
+        return self.augment(img, masks, boxes, labels)
+
 
 import torch.nn.functional as F
 

@@ -1,5 +1,5 @@
 from data import *
-from utils.augmentations import SSDAugmentation, BaseTransform, GrayscaleSSDAugmentation
+from utils.augmentations import SSDAugmentation, BaseTransform, GrayscaleSSDAugmentation, GrayscaleBaseTransform
 from utils.functions import MovingAverage, SavePath
 from utils.logger import Log
 from utils import timer
@@ -186,7 +186,7 @@ def train():
         setup_eval()
         val_dataset = COCODetection(image_path=cfg.dataset.valid_images,
                                     info_file=cfg.dataset.valid_info,
-                                    transform=BaseTransform(MEANS)) # TODO grayscale version
+                                    transform=BaseTransform(MEANS) if not args.grayscale else GrayscaleBaseTransform(MEANS))
 
     # Parallel wraps the underlying module, but when saving and loading we don't want that
     yolact_net = Yolact()
