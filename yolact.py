@@ -492,7 +492,8 @@ class Yolact(nn.Module):
     def init_weights(self, backbone_path):
         """ Initialize weights for training. """
         # Initialize the backbone with the pretrained weights.
-        self.backbone.init_backbone(backbone_path)
+        if not cfg.no_init_weights:
+            self.backbone.init_backbone(backbone_path)
 
         conv_constants = getattr(nn.Conv2d(1, 1, 1), '__constants__')
         
@@ -522,29 +523,30 @@ class Yolact(nn.Module):
             
             is_conv_layer = isinstance(module, nn.Conv2d) or is_script_conv
 
-            if is_conv_layer and module not in self.backbone.backbone_modules:
-                nn.init.xavier_uniform_(module.weight.data)
+            if is_conv_layer: # and module not in self.backbone.backbone_modules:
+                if cfg.no_init_weights or (not cfg.no_init_weights and module not in self.backbone.backbone_modules):
+                    nn.init.xavier_uniform_(module.weight.data)
 
-                if module.bias is not None:
-                    if cfg.use_focal_loss and 'conf_layer' in name:
-                        if not cfg.use_sigmoid_focal_loss:
-                            # Initialize the last layer as in the focal loss paper.
-                            # Because we use softmax and not sigmoid, I had to derive an alternate expression
-                            # on a notecard. Define pi to be the probability of outputting a foreground detection.
-                            # Then let z = sum(exp(x)) - exp(x_0). Finally let c be the number of foreground classes.
-                            # Chugging through the math, this gives us
-                            #   x_0 = log(z * (1 - pi) / pi)    where 0 is the background class
-                            #   x_i = log(z / c)                for all i > 0
-                            # For simplicity (and because we have a degree of freedom here), set z = 1. Then we have
-                            #   x_0 =  log((1 - pi) / pi)       note: don't split up the log for numerical stability
-                            #   x_i = -log(c)                   for all i > 0
-                            module.bias.data[0]  = np.log((1 - cfg.focal_loss_init_pi) / cfg.focal_loss_init_pi)
-                            module.bias.data[1:] = -np.log(module.bias.size(0) - 1)
+                    if module.bias is not None:
+                        if cfg.use_focal_loss and 'conf_layer' in name:
+                            if not cfg.use_sigmoid_focal_loss:
+                                # Initialize the last layer as in the focal loss paper.
+                                # Because we use softmax and not sigmoid, I had to derive an alternate expression
+                                # on a notecard. Define pi to be the probability of outputting a foreground detection.
+                                # Then let z = sum(exp(x)) - exp(x_0). Finally let c be the number of foreground classes.
+                                # Chugging through the math, this gives us
+                                #   x_0 = log(z * (1 - pi) / pi)    where 0 is the background class
+                                #   x_i = log(z / c)                for all i > 0
+                                # For simplicity (and because we have a degree of freedom here), set z = 1. Then we have
+                                #   x_0 =  log((1 - pi) / pi)       note: don't split up the log for numerical stability
+                                #   x_i = -log(c)                   for all i > 0
+                                module.bias.data[0]  = np.log((1 - cfg.focal_loss_init_pi) / cfg.focal_loss_init_pi)
+                                module.bias.data[1:] = -np.log(module.bias.size(0) - 1)
+                            else:
+                                module.bias.data[0]  = -np.log(cfg.focal_loss_init_pi / (1 - cfg.focal_loss_init_pi))
+                                module.bias.data[1:] = -np.log((1 - cfg.focal_loss_init_pi) / cfg.focal_loss_init_pi)
                         else:
-                            module.bias.data[0]  = -np.log(cfg.focal_loss_init_pi / (1 - cfg.focal_loss_init_pi))
-                            module.bias.data[1:] = -np.log((1 - cfg.focal_loss_init_pi) / cfg.focal_loss_init_pi)
-                    else:
-                        module.bias.data.zero_()
+                            module.bias.data.zero_()
     
     def train(self, mode=True):
         super().train(mode)
