@@ -641,6 +641,9 @@ coco_base_config = Config({
     'backbone': None,
     'name': 'base_config',
 
+    # transform iamges into grayscale
+    'grayscale': False,
+
     # Fast Mask Re-scoring Network
     # Inspried by Mask Scoring R-CNN (https://arxiv.org/abs/1903.00241)
     # Do not crop out the mask with bbox but slide a convnet on the image-size mask,
@@ -830,7 +833,9 @@ yolact_plus_person_1x_config = yolact_plus_person_config.copy({
 
 # Graycscale
 
-yolact_plus_grayscale_base_config = yolact_plus_base_config.copy({
+yolact_plus_base_3x_config = yolact_plus_base_config.copy({
+    'max_iter': 620000,  # ~ 800k / 1.3
+    'lr_steps': (int(280000 / 1.3), int(600000 / 1.3), int(700000 / 1.3), int(750000 / 1.3)),
     'crowd_iou_threshold': 0.5,  # originally set to 0.7
 })
 
