@@ -563,6 +563,27 @@ class PrepareMasks(object):
 
         return image, new_masks, boxes, labels
 
+class GrayscaleTransform(object):
+    def __init__(self, backboneTransform):
+        self.backboneTransform = backboneTransform
+    def __call__(self, image, masks=None, boxes=None, labels=None):
+        # 1. to float32
+        image = image.astype(np.float32)
+        # 2. to [0,1]
+        if not self.backboneTransform.to_float: # if image haven't been already in [0, 1]
+            image /= 255.0
+        # 3. convert rgb to grayscale
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # backbones' transformation outputs RGB images
+        # 4. augmentation of scaling and shifting color values
+        S = random.uniform(0.1, 1.0)
+        O = random.uniform(0.1, 1.0 - S)
+        image = S * image + O
+        # 5.  scale back to [0, 255] if original backbone requires
+        if not self.backboneTransform.to_float:
+            image *= 255.0
+            image = image.astype(uint8)
+        return image.astype(np.float32), masks, boxes, labels
+
 class BackboneTransform(object):
     """
     Transforms a BRG image made of floats in the range [0, 255] to whatever
@@ -682,6 +703,30 @@ class SSDAugmentation(object):
             ToPercentCoords(),
             PrepareMasks(cfg.mask_size, cfg.use_gt_bboxes),
             BackboneTransform(cfg.backbone.transform, mean, std, 'BGR')
+        ])
+
+    def __call__(self, img, masks, boxes, labels):
+        return self.augment(img, masks, boxes, labels)
+
+class GrayscaleSSDAugmentation(object):
+    """ Transform to be used when grayscale training. """
+
+    def __init__(self, mean=MEANS, std=STD):
+        self.augment = Compose([
+            ConvertFromInts(),
+            ToAbsoluteCoords(),
+            enable_if(cfg.augment_photometric_distort, PhotometricDistort()),
+            enable_if(cfg.augment_expand, Expand(mean)),
+            enable_if(cfg.augment_random_sample_crop, RandomSampleCrop()),
+            enable_if(cfg.augment_random_mirror, RandomMirror()),
+            enable_if(cfg.augment_random_flip, RandomFlip()),
+            enable_if(cfg.augment_random_flip, RandomRot90()),
+            Resize(),
+            enable_if(not cfg.preserve_aspect_ratio, Pad(cfg.max_size, cfg.max_size, mean)),
+            ToPercentCoords(),
+            PrepareMasks(cfg.mask_size, cfg.use_gt_bboxes),
+            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR'),
+            GrayscaleTransform(cfg.backbone.transform)
         ])
 
     def __call__(self, img, masks, boxes, labels):

@@ -1,5 +1,5 @@
 from data import *
-from utils.augmentations import SSDAugmentation, BaseTransform
+from utils.augmentations import SSDAugmentation, BaseTransform, GrayscaleSSDAugmentation
 from utils.functions import MovingAverage, SavePath
 from utils.logger import Log
 from utils import timer
@@ -78,6 +78,9 @@ parser.add_argument('--batch_alloc', default=None, type=str,
                     help='If using multiple GPUS, you can set this to be a comma separated list detailing which GPUs should get what local batch size (It should add up to your total batch size).')
 parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
+parser.add_argument('--grayscale', dest='grayscale', action='store_true',
+                    help='Train with images converted to grayscale.')
+
 
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
@@ -172,16 +175,18 @@ class CustomDataParallel(nn.DataParallel):
 def train():
     if not os.path.exists(args.save_folder):
         os.mkdir(args.save_folder)
+    if args.grayscale:
+        print("Grayscale training ON!")
 
     dataset = COCODetection(image_path=cfg.dataset.train_images,
                             info_file=cfg.dataset.train_info,
-                            transform=SSDAugmentation(MEANS))
+                            transform=SSDAugmentation(MEANS) if not args.grayscale else GrayscaleSSDAugmentation(MEANS))
     
     if args.validation_epoch > 0:
         setup_eval()
         val_dataset = COCODetection(image_path=cfg.dataset.valid_images,
                                     info_file=cfg.dataset.valid_info,
-                                    transform=BaseTransform(MEANS))
+                                    transform=BaseTransform(MEANS)) # TODO grayscale version
 
     # Parallel wraps the underlying module, but when saving and loading we don't want that
     yolact_net = Yolact()

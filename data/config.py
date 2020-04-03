@@ -799,7 +799,6 @@ yolact_plus_base_config = yolact_base_config.copy({
     'maskiou_alpha': 25,
     'rescore_bbox': False,
     'rescore_mask': True,
-    'crowd_iou_threshold': 0.5, # originally set to 0.7
 
     'discard_mask_area': 5*5,
 })
@@ -810,6 +809,7 @@ yolact_plus_base_1x_config = yolact_plus_base_config.copy({
     'lr_steps': (int(280000/4.5), int(600000/4.5), int(700000/4.5), int(750000/4.5)),
 })
 
+# Single Object
 
 yolact_plus_person_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_person',
@@ -826,10 +826,14 @@ yolact_plus_person_1x_config = yolact_plus_person_config.copy({
     # 1x = 12 epochs, instead of standard 54 => divide by ~4.5
     'max_iter': 100000, # ~ (800k / 1.85) / 4.5
     'lr_steps': (int(280000/1.85/4.5), int(600000/1.85/4.5), int(700000/1.85/4.5), int(750000/1.85/4.5)),
-
-
-
 })
+
+# Graycscale
+
+yolact_plus_grayscale_base_config = yolact_plus_base_config.copy({
+    'crowd_iou_threshold': 0.5,  # originally set to 0.7
+})
+
 
 yolact_plus_resnet50_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_resnet50',
