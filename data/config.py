@@ -799,6 +799,7 @@ yolact_plus_base_config = yolact_base_config.copy({
     'maskiou_alpha': 25,
     'rescore_bbox': False,
     'rescore_mask': True,
+    'crowd_iou_threshold': 0.5, # originally set to 0.7
 
     'discard_mask_area': 5*5,
 })
