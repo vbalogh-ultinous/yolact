@@ -839,6 +839,12 @@ yolact_plus_base_3x_config = yolact_plus_base_config.copy({
     'crowd_iou_threshold': 0.5,  # originally set to 0.7
 })
 
+yolact_plus_base_3x_person_config = yolact_plus_person_config.copy({
+    'max_iter': 333000,  # ~ 800k / 1.85 / 1.3
+    'lr_steps': (int(280000 / 1.85 / 1.3), int(600000 / 1.85 / 1.3), int(700000 / 1.85 / 1.3), int(750000 / 1.85 / 1.3)),
+    'crowd_iou_threshold': 0.5,  # originally set to 0.7
+})
+
 
 yolact_plus_resnet50_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_resnet50',
