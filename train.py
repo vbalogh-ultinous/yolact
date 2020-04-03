@@ -177,6 +177,8 @@ def train():
         os.mkdir(args.save_folder)
     if args.grayscale:
         print("Grayscale training ON!")
+        if cfg.no_init_weights:
+            print("No pretrained weights! Training on one channel only!")
 
     dataset = COCODetection(image_path=cfg.dataset.train_images,
                             info_file=cfg.dataset.train_info,
