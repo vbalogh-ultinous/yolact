@@ -1,7 +1,7 @@
 MO:
-2 GPU:
+2 GPU:  
   resnet101:
-    ++: 5.5 nap, sima: 3.5 nap
+    ++: 5.  5 nap, sima: 3.5 nap
   resnet50:
     ++: 5 nap
 
@@ -17,3 +17,9 @@ SO:
   resnet101:
     ++: szűk 3 nap
     1x ++: 1 nap
+    3x ++: 3 nap 15 óra
+    
+2GPU:
+    resnet101:
+        3x ++: 2 nap 1 óra
+    
