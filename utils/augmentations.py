@@ -564,8 +564,9 @@ class PrepareMasks(object):
         return image, new_masks, boxes, labels
 
 class GrayscaleTransform(object):
-    def __init__(self, backboneTransform):
+    def __init__(self, backboneTransform, eval=False):
         self.backboneTransform = backboneTransform
+        self.eval = eval
     def __call__(self, image, masks=None, boxes=None, labels=None):
         # 1. to float32
         image = image.astype(np.float32)
@@ -576,9 +577,10 @@ class GrayscaleTransform(object):
         if 'RGB' == self.backboneTransform.channel_order:
             image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # backbones' transformation outputs RGB images
         # 4. augmentation of scaling and shifting color values
-        S = random.uniform(0.1, 1.0)
-        O = random.uniform(0.1, 1.0 - S)
-        image = S * image + O
+        if not eval:
+            S = random.uniform(0.1, 1.0)
+            O = random.uniform(0.1, 1.0 - S)
+            image = S * image + O
         # 5.  scale back to [0, 255] if original backbone requires
         if not self.backboneTransform.to_float:
             image *= 255.0
@@ -623,7 +625,7 @@ class BackboneTransform(object):
 
 
 class BaseTransform(object):
-    """ Transorm to be used when evaluating. """
+    """ Transform to be used when evaluating. """
 
     def __init__(self, mean=MEANS, std=STD):
         self.augment = Compose([
@@ -643,7 +645,7 @@ class GrayscaleBaseTransform(object):
             ConvertFromInts(),
             Resize(resize_gt=False),
             BackboneTransform(cfg.backbone.transform, mean, std, 'BGR'),
-            GrayscaleTransform(cfg.backbone)
+            GrayscaleTransform(cfg.backbone.transform, True)
         ])
 
     def __call__(self, img, masks=None, boxes=None, labels=None):
