@@ -265,6 +265,7 @@ resnet101_dcn_inter3_backbone = resnet101_backbone.copy({
 })
 
 resnet101_dcn_inter3_1channel_backbone =  resnet101_dcn_inter3_backbone.copy({
+    'name': 'ResNet101_DCN_Interval3_1channel',
     'type': ResNetBackBone1CH,
 })
 

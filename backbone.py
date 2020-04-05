@@ -73,6 +73,7 @@ class ResNetBackbone(nn.Module):
 
         # From torchvision.models.resnet.Resnet
         self.inplanes = 64
+        
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(64)
@@ -125,7 +126,6 @@ class ResNetBackbone(nn.Module):
 
     def forward(self, x):
         """ Returns a list of convouts for each layer. """
-
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -158,8 +158,8 @@ class ResNetBackbone(nn.Module):
         self._make_layer(block, conv_channels // block.expansion, blocks=depth, stride=downsample)
 
 class ResNetBackBone1CH(ResNetBackbone):
-    def __init__(self, layers):
-        super().__init__(layers)
+    def __init__(self, layers, dcn_layers=[0, 0, 0, 0], dcn_interval=1, atrous_layers=[], block=Bottleneck, norm_layer=nn.BatchNorm2d):
+        super().__init__(layers, dcn_layers, dcn_interval, atrous_layers, block, norm_layer)
         self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False) # 1 channel
 
 
