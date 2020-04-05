@@ -73,7 +73,7 @@ class ResNetBackbone(nn.Module):
 
         # From torchvision.models.resnet.Resnet
         self.inplanes = 64
-        
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(64)
         self.relu = nn.ReLU(inplace=True)
@@ -157,7 +157,10 @@ class ResNetBackbone(nn.Module):
         """ Add a downsample layer to the backbone as per what SSD does. """
         self._make_layer(block, conv_channels // block.expansion, blocks=depth, stride=downsample)
 
-
+class ResNetBackBone1CH(ResNetBackbone):
+    def __init__(self, layers):
+        super().__init__(layers)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False) # 1 channel
 
 
 class ResNetBackboneGN(ResNetBackbone):

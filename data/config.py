@@ -1,4 +1,4 @@
-from backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone
+from backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone, ResNetBackBone1CH
 from math import sqrt
 import torch
 
@@ -262,6 +262,10 @@ resnet101_gn_backbone = backbone_base.copy({
 resnet101_dcn_inter3_backbone = resnet101_backbone.copy({
     'name': 'ResNet101_DCN_Interval3',
     'args': ([3, 4, 23, 3], [0, 4, 23, 3], 3),
+})
+
+resnet101_dcn_inter3_1channel_backbone =  resnet101_dcn_inter3_backbone.copy({
+    'type': ResNetBackBone1CH,
 })
 
 resnet50_backbone = resnet101_backbone.copy({
@@ -850,6 +854,16 @@ yolact_plus_person_3x_config = yolact_plus_person_config.copy({
 
 yolact_plus_person_3x_no_init_config = yolact_plus_person_3x_config.copy({
     'no_init_weights': True,
+
+    'backbone': resnet101_dcn_inter3_1channel_backbone.copy({
+    'selected_layers': list(range(1, 4)),
+
+    'pred_aspect_ratios': [[[1, 1 / 2, 2]]] * 5,
+    'pred_scales': [[i * 2 ** (j / 3.0) for j in range(3)] for i in [24, 48, 96, 192, 384]],
+    'use_pixel_scales': True,
+    'preapply_sqrt': False,
+    'use_square_anchors': False,
+    }),
 })
 
 
