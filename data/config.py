@@ -26,7 +26,9 @@ COLORS = ((244,  67,  54),
 
 # These are in BGR and are for ImageNet
 MEANS = (103.94, 116.78, 123.68)
-STD   = (57.38, 57.12, 58.40)
+STD = (57.38, 57.12, 58.40)
+GRAY_MEAN = (0.114 * MEANS[0] + 0.587 * MEANS[1] + 0.299 * MEANS[2])
+GRAY_STD = 57.5
 
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',

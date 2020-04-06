@@ -6,7 +6,7 @@ import types
 from numpy import random
 from math import sqrt
 
-from data import cfg, MEANS, STD
+from data import cfg, MEANS, STD, GRAY_MEAN, GRAY_STD
 
 
 def intersect(box_a, box_b):
@@ -571,20 +571,17 @@ class GrayscaleTransform(object):
         # 1. to float32
         image = image.astype(np.float32)
         # 2. to [0,1]
-        if not self.backboneTransform.to_float: # if image haven't been already in [0, 1]
-            image /= 255.0
-        # 3. convert rgb to grayscale
-        if 'RGB' == self.backboneTransform.channel_order:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # backbones' transformation outputs RGB images
+        image /= 255.0
+        # 3. convert rgb to grayscale, image originally BGR
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # 4. augmentation of scaling and shifting color values
         if not eval:
             S = random.uniform(0.1, 1.0)
             O = random.uniform(0.1, 1.0 - S)
             image = S * image + O
-        # 5.  scale back to [0, 255] if original backbone requires
-        if not self.backboneTransform.to_float:
-            image *= 255.0
-            image = image.astype('uint8') # if there are no pretrained weights, use only one channel
+        # 5.  scale back to [0, 255]
+        image *= 255.0
+        image = image.astype('uint8') # if there are no pretrained weights, use only one channel
         if not cfg.no_init_weights: # if there are pretrained weights, use 3 channels
             image = np.stack((image, image, image), -1) # three channels to match imagenet pretrained weights 3 channels
         else:
@@ -593,7 +590,7 @@ class GrayscaleTransform(object):
 
 class BackboneTransform(object):
     """
-    Transforms a BRG image made of floats in the range [0, 255] to whatever
+    Transforms a BGR image made of floats in the range [0, 255] to whatever
     input the current backbone network needs.
 
     transform is a transform config object (see config.py).
@@ -603,6 +600,7 @@ class BackboneTransform(object):
         self.mean = np.array(mean, dtype=np.float32)
         self.std  = np.array(std,  dtype=np.float32)
         self.transform = transform
+        self.grayscale = grayscale
 
         # Here I use "Algorithms and Coding" to convert string permutations to numbers
         self.channel_map = {c: idx for idx, c in enumerate(in_channel_order)}
@@ -619,7 +617,8 @@ class BackboneTransform(object):
         elif self.transform.to_float:
             img = img / 255
 
-        img = img[:, :, self.channel_permutation]
+        if 3 == img.shape[2]: # image has 3 channels
+            img = img[:, :, self.channel_permutation]
 
         return img.astype(np.float32), masks, boxes, labels
 
@@ -646,8 +645,8 @@ class GrayscaleBaseTransform(object):
         self.augment = Compose([
             ConvertFromInts(),
             Resize(resize_gt=False),
-            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR'),
-            GrayscaleTransform(cfg.backbone.transform, True)
+            GrayscaleTransform(cfg.backbone.transform),
+            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR')
         ])
 
     def __call__(self, img, masks=None, boxes=None, labels=None):
@@ -747,8 +746,8 @@ class GrayscaleSSDAugmentation(object):
             enable_if(not cfg.preserve_aspect_ratio, Pad(cfg.max_size, cfg.max_size, mean)),
             ToPercentCoords(),
             PrepareMasks(cfg.mask_size, cfg.use_gt_bboxes),
-            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR'),
-            GrayscaleTransform(cfg.backbone.transform)
+            GrayscaleTransform(cfg.backbone.transform),
+            BackboneTransform(cfg.backbone.transform, GRAY_MEAN, GRAY_STD, 'BGR'),
         ])
 
     def __call__(self, img, masks, boxes, labels):
