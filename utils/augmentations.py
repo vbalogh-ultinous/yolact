@@ -600,7 +600,6 @@ class BackboneTransform(object):
         self.mean = np.array(mean, dtype=np.float32)
         self.std  = np.array(std,  dtype=np.float32)
         self.transform = transform
-        self.grayscale = grayscale
 
         # Here I use "Algorithms and Coding" to convert string permutations to numbers
         self.channel_map = {c: idx for idx, c in enumerate(in_channel_order)}
