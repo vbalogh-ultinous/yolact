@@ -645,7 +645,7 @@ class GrayscaleBaseTransform(object):
             ConvertFromInts(),
             Resize(resize_gt=False),
             GrayscaleTransform(cfg.backbone.transform),
-            BackboneTransform(cfg.backbone.transform, mean, std, 'BGR')
+            BackboneTransform(cfg.backbone.transform, GRAY_MEAN, GRAY_STD, 'BGR')
         ])
 
     def __call__(self, img, masks=None, boxes=None, labels=None):
