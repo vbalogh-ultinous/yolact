@@ -145,7 +145,7 @@ coco2017_person_dataset_gpumaster01 = dataset_base.copy({
     'name': 'COCO person only 2017',
 
     'train_info': './data/coco/annotations/instances_train2017_person.json',
-    'train_images': '/mnt/data/bjenei/coco/val2017/train2017/',
+    'train_images': '/mnt/data/bjenei/coco/train2017/',
 
     'valid_info': './data/coco/annotations/instances_val2017_person.json',
     'valid_images': '/mnt/data/bjenei/coco/val2017/',
