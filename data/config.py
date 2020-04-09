@@ -141,6 +141,19 @@ coco2017_person_dataset = dataset_base.copy({
     'label_map': None
 })
 
+coco2017_person_dataset_gpumaster01 = dataset_base.copy({
+    'name': 'COCO person only 2017',
+
+    'train_info': './data/coco/annotations/instances_train2017_person.json',
+    'train_images': '/mnt/data/bjenei/coco/val2017/train2017/',
+
+    'valid_info': './data/coco/annotations/instances_val2017_person.json',
+    'valid_images': '/mnt/data/bjenei/coco/val2017/',
+    'has_gt': True,
+    'class_names': {'person'},
+    'label_map': None
+})
+
 
 coco2014_dataset = dataset_base.copy({
     'name': 'COCO 2014',
@@ -823,7 +836,6 @@ yolact_plus_base_1x_config = yolact_plus_base_config.copy({
 })
 
 # Single Object
-
 yolact_plus_person_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_person',
     'dataset': coco2017_person_dataset,
@@ -841,8 +853,7 @@ yolact_plus_person_1x_config = yolact_plus_person_config.copy({
     'lr_steps': (int(280000/1.85/4.5), int(600000/1.85/4.5), int(700000/1.85/4.5), int(750000/1.85/4.5)),
 })
 
-# Graycscale
-
+# Grayscale
 yolact_plus_base_3x_config = yolact_plus_base_config.copy({
     'max_iter': 620000,  # ~ 800k / 1.3
     'lr_steps': (int(280000 / 1.3), int(600000 / 1.3), int(700000 / 1.3), int(750000 / 1.3)),
@@ -853,6 +864,20 @@ yolact_plus_person_3x_config = yolact_plus_person_config.copy({
     'max_iter': 333000,  # ~ 800k / 1.85 / 1.3
     'lr_steps': (int(280000 / 1.85 / 1.3), int(600000 / 1.85 / 1.3), int(700000 / 1.85 / 1.3), int(750000 / 1.85 / 1.3)),
     'crowd_iou_threshold': 0.5,  # originally set to 0.7
+})
+
+yolact_plus_person_3x_16_config =  yolact_plus_person_3x_config.copy({
+    'dataset': coco2017_person_dataset_gpumaster01,
+    'num_classes': len(coco2017_person_dataset.class_names) + 1,
+    'backbone': resnet101_dcn_inter3_backbone.copy({
+        'selected_layers': list(range(1, 4)),
+
+        'pred_aspect_ratios': [[[1, 1 / 2, 2]]] * 5,
+        'pred_scales': [[i * 2 ** (j / 3.0) for j in range(3)] for i in [16, 32, 64, 128, 256]], # [24, 48, 96, 192, 384]
+        'use_pixel_scales': True,
+        'preapply_sqrt': False,
+        'use_square_anchors': False,
+    }),
 })
 
 yolact_plus_person_3x_no_init_config = yolact_plus_person_3x_config.copy({
@@ -869,7 +894,7 @@ yolact_plus_person_3x_no_init_config = yolact_plus_person_3x_config.copy({
     }),
 })
 
-
+# Resnet-50
 yolact_plus_resnet50_config = yolact_plus_base_config.copy({
     'name': 'yolact_plus_resnet50',
 
