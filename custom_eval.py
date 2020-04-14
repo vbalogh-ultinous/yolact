@@ -112,6 +112,8 @@ def parse_args(argv=None):
                         help='If specified, outputs a csv file storing bounding box and confidence score data.')
     parser.add_argument('--coco_class', default=None, type=str,
                         help='If specified, detections are specifically filtered for this coco class.')
+    parser.add_argument('--grayscale', default=False, action='store_true',
+                        help='If set, images are turned to grayscale before detection.')
 
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False)
@@ -576,8 +578,19 @@ def badhash(x):
     return x
 
 def evalimage(net:Yolact, path:str, save_path:str=None):
-    frame = torch.from_numpy(cv2.imread(path)).cuda().float()
-    batch = FastBaseTransform()(frame.unsqueeze(0))
+    image = cv2.imread(path)
+    if args.grayscale:
+        image = image.astype(np.float32)
+        image /= 255.0
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image *= 255.0
+        image = image.astype('uint8')  # if there are no pretrained weights, use only one channel
+        if not cfg.no_init_weights:  # if there are pretrained weights, use 3 channels
+            image = np.stack((image, image, image), -1)  # three channels to match imagenet pretrained weights 3 channels
+        else: # TODO FastBaseTransform not implemented for 1 channel images
+            image = np.expand_dims(image, axis=2)
+    frame = torch.from_numpy(image).cuda().float()
+    batch = FastBaseTransform(args.grayscale)(frame.unsqueeze(0))
     preds = net(batch)
 
     image_save_path = save_path + '.png'
