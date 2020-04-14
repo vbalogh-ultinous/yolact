@@ -809,7 +809,7 @@ yolact_resnet50_pascal_config = yolact_resnet50_config.copy({
 
 yolact_plus_base_config = yolact_base_config.copy({
     'name': 'yolact_plus_base',
-
+    'nms_conf_thresh': 0.01, # set from 0.05
     'backbone': resnet101_dcn_inter3_backbone.copy({
         'selected_layers': list(range(1, 4)),
         
@@ -877,12 +877,12 @@ yolact_plus_person_3x_16_config =  yolact_plus_person_3x_config.copy({
         'use_pixel_scales': True,
         'preapply_sqrt': False,
         'use_square_anchors': False,
+
     }),
 })
 
 yolact_plus_person_3x_no_init_config = yolact_plus_person_3x_config.copy({
     'no_init_weights': True,
-
     'backbone': resnet101_dcn_inter3_1channel_backbone.copy({
     'selected_layers': list(range(1, 4)),
 
