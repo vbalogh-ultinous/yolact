@@ -590,7 +590,7 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         else: # TODO FastBaseTransform not implemented for 1 channel images
             image = np.expand_dims(image, axis=2)
     frame = torch.from_numpy(image).cuda().float()
-    batch = FastBaseTransform(args.grayscale)(frame.unsqueeze(0))
+    batch = FastBaseTransform()(frame.unsqueeze(0))
     preds = net(batch)
 
     image_save_path = save_path + '.png'
