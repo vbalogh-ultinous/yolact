@@ -6,4 +6,7 @@ python3 ~/git/yolact/custom_eval.py --config yolact_plus_base_config --trained_m
   
 # so on coco
 python3 ~/git/yolact/custom_eval.py --config yolact_plus_person_config  --trained_model ~/git/yolact/weights/Yolact_plus_SO_COCO2017/yolact_plus_person_49_200000.pth --score_threshold 0.1 --top_k 100 --benchmark --detect --images /data/vbalogh/datasets/coco/val2017/:/data/vbalogh/datasets/personDetData/output_detections/yolact_detections/coco/val2017/SO_yolact++/ --csv /data/vbalogh/datasets/personDetData/output_detections/yolact_detections/yolact_plus_coco17_SO.csv
+
+# so on BPark
+python3 custom_eval.py --grayscale --config yolact_plus_person_config --trained_model weights/Yolact_plus_SO_COCO2017/yolact_plus_person_49_200000.pth --score_threshold 0.1 --top_k 100 --benchmark --detect --images /data/vbalogh/datasets/personDetData/gt/BPark_test/budapest_ir_300_visible_body/:/data/vbalogh/datasets/personDetData/output_detections/yolact_detections/BPark/SOIC_rgbturned2gray_4.5x_yolact++/ --csv /data/vbalogh/datasets/personDetData/output_detections/yolact_detections/yolact_plus_Bpark_rgbturned2gray_SO.csv
   
