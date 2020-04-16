@@ -141,6 +141,18 @@ coco2017_person_dataset = dataset_base.copy({
     'label_map': None
 })
 
+coco_sbd_person_dataset = dataset_base.copy({
+    'name': 'COCO person only 2017',
+
+    'train_info': './data/coco+sbd/annotations/instances_coco+sbd_person.json',
+    'train_images': './data/', # rest of path can be found in coco+sbd person-only json
+    'valid_info': './data/coco+sbd/annotations/instances_val2017_person.json',
+    'valid_images': './data/coco/images/',
+    'has_gt': True,
+    'class_names': {'person'},
+    'label_map': None
+})
+
 coco2017_person_dataset_gpumaster01 = dataset_base.copy({
     'name': 'COCO person only 2017',
 
