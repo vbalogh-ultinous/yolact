@@ -177,6 +177,8 @@ def train():
         os.mkdir(args.save_folder)
     if args.grayscale:
         print("Grayscale training ON!")
+        if args.augmentation:
+            print('Augmentiation: solarize')
         if cfg.no_init_weights:
             print("No pretrained weights! Training on one channel only!")
 
