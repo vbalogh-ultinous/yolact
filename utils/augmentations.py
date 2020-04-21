@@ -573,7 +573,7 @@ class GrayscaleTransform(object):
         # 2. to [0,1]
         image /= 255.0
         # 3. convert rgb to grayscale, image originally BGR
-        image = v2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # 4. augmentation
         # a) solarize
         if self.augmentation:
