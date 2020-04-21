@@ -564,21 +564,32 @@ class PrepareMasks(object):
         return image, new_masks, boxes, labels
 
 class GrayscaleTransform(object):
-    def __init__(self, backboneTransform, eval=False):
+    def __init__(self, backboneTransform, solarize=False):
         self.backboneTransform = backboneTransform
-        self.eval = eval
+        self.solarize = solarize
     def __call__(self, image, masks=None, boxes=None, labels=None):
         # 1. to float32
         image = image.astype(np.float32)
         # 2. to [0,1]
         image /= 255.0
         # 3. convert rgb to grayscale, image originally BGR
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        # 4. augmentation of scaling and shifting color values
-        if not eval:
-            S = random.uniform(0.1, 1.0)
-            O = random.uniform(0.1, 1.0 - S)
-            image = S * image + O
+        image = v2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # 4. augmentation
+        # a) solarize
+        if self.solarize:
+            bottom = random.uniform(0.0, 1.0)
+            top = random.uniform(0.0, 1.0)
+            A = image.min()
+            B = image.max()
+            M = random.uniform( (A + 0.25*(B-A)), B - 0.25*(B-A) )
+            if 0.5 <= bottom:
+                image[image <= M] = M - (image[image <= M] - A)
+            if 0.5 <= top:
+                image[image > M] = B - (image[image > M] - M)
+        # b) scaling and shifting color values
+        S = random.uniform(0.1, 1.0)
+        O = random.uniform(0.1, 1.0 - S)
+        image = S * image + O
         # 5.  scale back to [0, 255]
         image *= 255.0
         image = image.astype('uint8') # if there are no pretrained weights, use only one channel
