@@ -564,9 +564,9 @@ class PrepareMasks(object):
         return image, new_masks, boxes, labels
 
 class GrayscaleTransform(object):
-    def __init__(self, backboneTransform, solarize=False):
+    def __init__(self, backboneTransform, augmentation=False):
         self.backboneTransform = backboneTransform
-        self.solarize = solarize
+        self.augmentation = augmentation
     def __call__(self, image, masks=None, boxes=None, labels=None):
         # 1. to float32
         image = image.astype(np.float32)
@@ -576,7 +576,7 @@ class GrayscaleTransform(object):
         image = v2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # 4. augmentation
         # a) solarize
-        if self.solarize:
+        if self.augmentation:
             bottom = random.uniform(0.0, 1.0)
             top = random.uniform(0.0, 1.0)
             A = image.min()
@@ -651,11 +651,11 @@ class BaseTransform(object):
 class GrayscaleBaseTransform(object):
     """ Transorm to be used when evaluating. """
 
-    def __init__(self, mean=MEANS, std=STD):
+    def __init__(self, mean=MEANS, std=STD, augmentation=False):
         self.augment = Compose([
             ConvertFromInts(),
             Resize(resize_gt=False),
-            GrayscaleTransform(cfg.backbone.transform),
+            GrayscaleTransform(cfg.backbone.transform, augmentation=augmentation),
             BackboneTransform(cfg.backbone.transform, GRAY_MEAN, GRAY_STD, 'BGR')
         ])
 
@@ -742,7 +742,7 @@ class SSDAugmentation(object):
 class GrayscaleSSDAugmentation(object):
     """ Transform to be used when grayscale training. """
 
-    def __init__(self, mean=MEANS, std=STD):
+    def __init__(self, mean=MEANS, std=STD, augmentation=False):
         self.augment = Compose([
             ConvertFromInts(),
             ToAbsoluteCoords(),
@@ -756,7 +756,7 @@ class GrayscaleSSDAugmentation(object):
             enable_if(not cfg.preserve_aspect_ratio, Pad(cfg.max_size, cfg.max_size, mean)),
             ToPercentCoords(),
             PrepareMasks(cfg.mask_size, cfg.use_gt_bboxes),
-            GrayscaleTransform(cfg.backbone.transform),
+            GrayscaleTransform(cfg.backbone.transform, augmentation=augmentation),
             BackboneTransform(cfg.backbone.transform, GRAY_MEAN, GRAY_STD, 'BGR'),
         ])
 
