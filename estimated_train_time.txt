@@ -19,6 +19,7 @@ SO:
     1x ++: 1 nap
     3x ++ grayscale 3 channels: 3 nap 15 óra
     3x ++ grayscale 1 channel: 3 nap 15 óra
+    3x ++ grayscale-3c, solarize,  16 anchor, coco+sbd? 3 nap 23 óra
     
 2GPU:
     resnet101:
