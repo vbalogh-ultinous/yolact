@@ -879,7 +879,7 @@ yolact_plus_person_3x_config = yolact_plus_person_config.copy({
 })
 
 yolact_plus_person_3x_16_config =  yolact_plus_person_3x_config.copy({
-    'dataset': coco2017_person_dataset_gpumaster01,
+    #'dataset': coco2017_person_dataset_gpumaster01,
     'num_classes': len(coco2017_person_dataset.class_names) + 1,
     'backbone': resnet101_dcn_inter3_backbone.copy({
         'selected_layers': list(range(1, 4)),
