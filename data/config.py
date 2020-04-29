@@ -878,7 +878,7 @@ yolact_plus_person_3x_config = yolact_plus_person_config.copy({
     'crowd_iou_threshold': 0.5,  # originally set to 0.7
 })
 
-yolact_plus_person_3x_16_config =  yolact_plus_person_3x_config.copy({
+yolact_plus_person_3x_16_config = yolact_plus_person_3x_config.copy({
     #'dataset': coco2017_person_dataset_gpumaster01,
     'num_classes': len(coco2017_person_dataset.class_names) + 1,
     'backbone': resnet101_dcn_inter3_backbone.copy({
@@ -901,6 +901,10 @@ yolact_plus_person_3x_16_coco_sbd_config =  yolact_plus_person_3x_16_config.copy
 })
 
 yolact_plus_person_3x_16_augmented_coco_sbd_config = yolact_plus_person_3x_16_coco_sbd_config.copy({
+    'augmentation': True
+})
+
+yolact_plus_person_3x_16_augmented_config = yolact_plus_person_3x_16_config.copy({
     'augmentation': True
 })
 
