@@ -811,7 +811,7 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
 
     transform = FastBaseTransform()
     frame_times = MovingAverage()
-    progress_bar = ProgressBar(30, num_frames)
+    #progress_bar = ProgressBar(30, num_frames)
     i = 0
     try:
         while(True):#for i in range(num_frames):
@@ -844,7 +844,7 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                 frame_times.add(timer.total_time())
                 fps = 1 / frame_times.get_avg()
                 progress = (i+1) / num_frames * 100
-                progress_bar.set_val(i+1)
+                #progress_bar.set_val(i+1)
 
                 #print('\rProcessing Frames  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
                  #   % (repr(progress_bar), i+1, num_frames, progress, fps), end='')
