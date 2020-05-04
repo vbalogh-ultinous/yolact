@@ -881,7 +881,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
 
     frame_times = MovingAverage()
     dataset_size = len(dataset) if args.max_images < 0 else min(args.max_images, len(dataset))
-    progress_bar = ProgressBar(30, dataset_size)
+    #progress_bar = ProgressBar(30, dataset_size)
 
     print()
 
