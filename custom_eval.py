@@ -825,6 +825,7 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                     # TODO ugly, fuse with imageeval
                     print('before gray transform', read[1][0])
                     for e in read[1]:
+                        print(type(e))
                         e = e.astype(np.float32)
                         e /= 255.0
                         e = cv2.cvtColor(e, cv2.COLOR_BGR2GRAY)
