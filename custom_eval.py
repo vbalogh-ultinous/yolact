@@ -821,6 +821,18 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                 if read[0] == False:
                     break
                 frame = torch.from_numpy(read[1]).cuda().float()#torch.from_numpy(vid.read()[1]).cuda().float()
+                if args.grayscale:
+                    frame = frame.astype(np.float32)
+                    frame /= 255.0
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    frame *= 255.0
+                    frame = frame.astype('uint8')  # if there are no pretrained weights, use only one channel
+                    if not cfg.no_init_weights:  # if there are pretrained weights, use 3 channels
+                        frame = np.stack((frame, frame, frame),
+                                         -1)  # three channels to match imagenet pretrained weights 3 channels
+                    else:  # TODO FastBaseTransform not implemented for 1 channel images
+                        frame = np.expand_dims(frame, axis=2)
+
                 batch = transform(frame.unsqueeze(0))
                 preds = net(batch)
                 processed, json_data = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
