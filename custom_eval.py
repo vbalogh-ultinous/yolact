@@ -799,7 +799,6 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
 
     vid = cv2.VideoCapture(in_path)
     print(vid.isOpened())
-    print(vid.getBackendName())
 
     target_fps   = round(vid.get(cv2.CAP_PROP_FPS)) if vid.get(cv2.CAP_PROP_FPS) != float('inf') else 25
     frame_width  = round(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
