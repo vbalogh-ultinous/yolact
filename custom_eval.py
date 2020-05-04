@@ -820,7 +820,8 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                 read = vid.read()
                 if read[0] == False:
                     break
-                frame = torch.from_numpy(read[1]).cuda()#.float()#torch.from_numpy(vid.read()[1]).cuda().float()
+                print(read)
+                frame = torch.from_numpy(read[1]).cuda().float()#.float()#torch.from_numpy(vid.read()[1]).cuda().float()
                 if args.grayscale:
                     frame = frame.astype(np.float32)
                     frame /= 255.0
