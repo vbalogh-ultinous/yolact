@@ -820,24 +820,20 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
                 read = vid.read()
                 if read[0] == False:
                     break
-
-                if args.grayscale:
+                r = read[1]
+                if args.grayscale:                    
                     # TODO ugly, fuse with imageeval
-                    print('before gray transform', read[1][0])
-                    for e in read[1]:
-                        print(type(e))
-                        e = e.astype(np.float32)
-                        e /= 255.0
-                        e = cv2.cvtColor(e, cv2.COLOR_BGR2GRAY)
-                        e *= 255.0
-                        e = e.astype('uint8')  # if there are no pretrained weights, use only one channel
-                        if not cfg.no_init_weights:  # if there are pretrained weights, use 3 channels
-                            e = np.stack((e, e, e),
-                                             -1)  # three channels to match imagenet pretrained weights 3 channels
+                    r = r.astype(np.float32)
+                    r /= 255.0
+                    r = cv2.cvtColor(r, cv2.COLOR_BGR2GRAY)
+                    r *= 255.0
+                    r = r.astype('uint8')  # if there are no pretrained weights, use only one channel
+                    if not cfg.no_init_weights:  # if there are pretrained weights, use 3 channels
+                        r = np.stack((r, r, r), -1)  # three channels to match imagenet pretrained weights 3 channels
                     else:  # TODO FastBaseTransform not implemented for 1 channel images
-                        e = np.expand_dims(e, axis=2)
-                    print('after', read[1][0])
-                frame = torch.from_numpy(read[1]).cuda().float()  # .float()#torch.from_numpy(vid.read()[1]).cuda().float()
+                        read[1] = np.expand_dims(r, axis=2)
+                frame = torch.from_numpy(r).cuda().float()  # .float()#torch.from_numpy(vid.read()[1]).cuda().float()
+
                 batch = transform(frame.unsqueeze(0))
                 preds = net(batch)
                 processed, json_data = prep_display(preds, frame, None, None, undo_transform=False, class_color=True)
